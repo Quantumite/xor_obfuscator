@@ -1,10 +1,9 @@
 import argparse
 import random
 import string
-
-#TODO
-## 1) On 'decrypt', allow execution via python script
-## 2) Encrypt using other algorithms
+import os
+import subprocess
+from tempfile import mkstemp
  
 def main():
 	#argparse values
@@ -14,6 +13,7 @@ def main():
 	parser.add_argument("-o","--output-file", help="Output file to be written after input_file is XOR'd with password", type=str, default="out.file", dest="output_file")
 	parser.add_argument("-v","--verbose", help="Display all information while running", action="store_true")
 	parser.add_argument("-c","--create-password", help="Create random password for XOR obfuscation", type=int, default=-1, dest="ran_pass_len")
+	parser.add_argument("-r","--run", help="Run the executable after decrypting. Note: XOR is a symmetric operation so it cannot determine if this is an encryption or decryption process. This will attempt to run the result of the XOR operation. This could lead to undesirable results and the author takes no blame for anything that happens as a result of using this command.", action="store_true")
 	args = parser.parse_args()
 
 	#conditions to check before running program
@@ -44,13 +44,24 @@ def main():
 		print "The output file has been opened.\n"
 	try:
 		j=1
+		code = ""
+		fd = None
+		path = ""
 		byte = f.read(1)#read first byte
 		if args.verbose:
 			print "Bytes are being read...\n"
+		if args.run:
+			fd, path = mkstemp()
+			if args.verbose:
+				print "Creating temp file for execution...\n"
+				print "Tempfile is located at: "+str(path)+"\n"
 		while byte != "": #read bytes until there are none left
 			pass_byte = args.password[i:i+1]#take one byte from password
 			new_byte = chr(ord(byte) ^ ord(pass_byte)) #XOR YAY
-			f2.write(new_byte)#write to output file
+			if args.run:
+				code +=new_byte
+			else:
+				f2.write(new_byte)#write to output file
 			if args.verbose:
 				print str(j)+" bytes have been written.\n"
 			#loop parameter updates			
@@ -58,8 +69,23 @@ def main():
 			byte = f.read(1)
 			j=j+1 #j is used to measure how many bytes have been written
 	finally:
+		if args.run:
+			f = os.fdopen(fd,"w")
+			f.write(code)
+			os.chmod(path,0700)
+			f.close()
+			if args.verbose:
+				print "Finished writing and modifying temp file for execution\n"
+			try:
+				result = subprocess.call(path)
+				if args.verbose:
+					print "Result of execution: "+str(result)+"\n"
+			finally:
+				os.remove(path)
+				if args.verbose:
+					print "Removed temporary file!\n"
 		if args.verbose:
-			print "Reached finally block."
+			print "All done!"
 		f.close()
 		f2.close()
 
