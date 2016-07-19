@@ -1,6 +1,10 @@
 import argparse
-import array
 
+#TODO
+## 1) Create random password of user-determined size
+## 2) On 'decrypt', allow execution via python script
+## 3) Encrypt using other algorithms
+## 4) 
 def main():
 	#argparse values
 	parser = argparse.ArgumentParser(description='Password based XOR obfuscator.')
